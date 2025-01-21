@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """model for N queens puzzle is the challenge """
 import sys
 

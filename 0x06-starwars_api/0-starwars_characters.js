@@ -1,46 +1,79 @@
 #!/usr/bin/node
+const https = require('https');
 
-const request = require('request');
+function fetchUrl (url, callback) {
+  https.get(url, (res) => {
+    let data = '';
+    const { statusCode, headers } = res;
 
-// Fetch characters from the Star Wars API based on the movie ID
-function fetchCharacters(movieId) {
-  const movieUrl = `https://swapi.dev/api/films/${movieId}/`;
-
-  request(movieUrl, { json: true }, (error, response, body) => {
-    if (error) {
-      console.error(`Error fetching movie data: ${error.message}`);
+    if (statusCode === 301 || statusCode === 302) {
+      const newUrl = headers.location;
+      fetchUrl(newUrl, callback);
       return;
     }
 
-    if (response.statusCode !== 200) {
-      console.error(`Error: Movie with ID ${movieId} not found.`);
-      return;
-    }
-
-    // Get the list of character URLs
-    const characters = body.characters;
-
-    // Fetch and print each character's name in order
-    characters.forEach((characterUrl) => {
-      request(characterUrl, { json: true }, (charError, charResponse, charBody) => {
-        if (charError) {
-          console.error(`Error fetching character data: ${charError.message}`);
-          return;
-        }
-
-        if (charResponse.statusCode === 200) {
-          console.log(charBody.name);
-        }
-      });
+    res.on('data', (chunk) => {
+      data += chunk;
     });
+
+    res.on('end', () => {
+      if (statusCode !== 200) {
+        callback(new Error(`Failed to fetch data: ${statusCode}`), null);
+        return;
+      }
+      callback(null, data);
+    });
+  }).on('error', (error) => {
+    callback(error, null);
   });
 }
 
-// Get movie ID from command line arguments
-const movieId = process.argv[2];
-if (!movieId) {
-  console.log('Usage: node star_wars_characters.js <movie_id>');
+function getAndPrintCharacterNames (filmId) {
+  const url = `https://swapi-api.alx-tools.com/api/films/${filmId}`;
+
+  fetchUrl(url, (error, data) => {
+    if (error) {
+      console.error(`Error fetching film data: ${error.message}`);
+      return;
+    }
+
+    try {
+      const filmData = JSON.parse(data);
+      const characterUrls = filmData.characters;
+      const characterPromises = characterUrls.map((characterUrl) => {
+        return new Promise((resolve, reject) => {
+          fetchUrl(characterUrl, (error, data) => {
+            if (error) {
+              reject(error);
+            } else {
+              try {
+                const character = JSON.parse(data);
+                resolve(character.name);
+              } catch (error) {
+                reject(new Error('Error parsing character data'));
+              }
+            }
+          });
+        });
+      });
+
+      Promise.all(characterPromises)
+        .then((names) => {
+          names.forEach(name => console.log(name));
+        })
+        .catch((error) => {
+          console.error(`Error fetching character names: ${error.message}`);
+        });
+    } catch (error) {
+      console.error('Error parsing film data:', error.message);
+    }
+  });
+}
+
+if (process.argv.length !== 3) {
+  console.log('Usage: node script.js <film_id>');
   process.exit(1);
 }
 
-fetchCharacters(movieId);
+const filmId = parseInt(process.argv[2], 10);
+getAndPrintCharacterNames(filmId);

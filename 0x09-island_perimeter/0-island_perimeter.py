@@ -1,12 +1,12 @@
 #!/usr/bin/python3
+"""
+    This script calculates the perimeter of an island in a 2D grid.
+    The island is represented as a grid of 1s (land) and 0s (water).
+    Each cell in the grid can have 4 boundaries (top, bottom, left, right),
+    and the perimeter is determined by the number of
+    water cells adjacent to land cells.
+"""
 
-# This script calculates the perimeter of an island in a 2D grid.
-# The island is represented as a grid of 1s (land) and 0s (water).
-# Each cell in the grid can have 4 boundaries (top, bottom, left, right),
-# and the perimeter is determined by the number of
-# water cells adjacent to land cells.
-
-# Sets to store grid positions of cells based on the number of boundaries:
 bound_4 = set()
 bound_3 = set()
 bound_2 = set()
@@ -64,7 +64,6 @@ def boundary(grid, i, j):
 def island_perimeter(grid):
     """
     Calculates the perimeter of the island in a 2D grid.
-
     Args:
         grid (list[list[int]]): A 2D list representing
         the island (1s) and water (0s).
